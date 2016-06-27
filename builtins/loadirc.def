@@ -1,0 +1,109 @@
+This file is loadirc.def, from which is created loadirc.c.
+It implements the builtin "loadirc" in Bash.
+
+Copyright (C) 1987-2012 Free Software Foundation, Inc.
+
+This file is part of GNU Bash, the Bourne Again SHell.
+
+Bash is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Bash is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Bash.  If not, see <http://www.gnu.org/licenses/>.
+
+$PRODUCES loadirc.c
+
+$BUILTIN loadirc
+$FUNCTION loadirc_builtin
+$SHORT_DOC loadirc [-cl] [-a name] [command [arguments ...]] [redirection ...]
+Replace the shell with the given command.
+
+Execute COMMAND, replacing this shell with the specified program.
+ARGUMENTS become the arguments to COMMAND.  If COMMAND is not specified,
+any redirections take effect in the current shell.
+
+Options:
+  -a name   pass NAME as the zeroth argument to COMMAND
+  -c        execute COMMAND with an empty environment
+  -l        place a dash in the zeroth argument to COMMAND
+
+If the command cannot be executed, a non-interactive shell exits, unless
+the shell option `execfail' is set.
+
+Exit Status:
+Returns success unless COMMAND is not found or a redirection error occurs.
+$END
+
+#include <config.h>
+#if defined (HAVE_UNISTD_H)
+#  ifdef _MINIX
+#    include <sys/types.h>
+#  endif
+#  include <unistd.h>
+#endif
+
+#include "../bashtypes.h"
+#include "posixstat.h"
+#include <signal.h>
+#include <errno.h>
+
+#if defined (HAVE_UNISTD_H)
+#  include <unistd.h>
+#endif
+
+#include "../bashansi.h"
+#include "../bashintl.h"
+
+#include "../shell.h"
+#include "../execute_cmd.h"
+#include "../findcmd.h"
+#if defined (JOB_CONTROL)
+#  include "../jobs.h"
+#endif
+#include "../flags.h"
+#include "../trap.h"
+#if defined (HISTORY)
+#  include "../bashhist.h"
+#endif
+#include "common.h"
+#include "bashgetopt.h"
+
+#include "../test.h"
+
+extern char *this_command_name;
+
+/* TEST/[ builtin. */
+int
+loadirc_builtin (list)
+     WORD_LIST *list;
+{
+  char **argv;
+  int argc, result;
+
+  /* We let Matthew Bradburn and Kevin Braunsdorf's code do the
+     actual test command.  So turn the list of args into an array
+     of strings, since that is what their code wants. */
+  if (list == 0)
+    {
+      if (this_command_name[0] == '[' && !this_command_name[1])
+    {
+      builtin_error (_("missing `]'"));
+      return (EX_BADUSAGE);
+    }
+
+      return (EXECUTION_FAILURE);
+    }
+
+  argv = make_builtin_argv  (list, &argc);
+  result = test_command (argc, argv);
+  free ((char *)argv);
+
+  return (result);
+}

@@ -1,0 +1,227 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ bash (4.3-14ubuntu1) wily; urgency=medium
+ .
+   * Merge with Debian; remaining changes:
+     - skel.bashrc:
+       - Run lesspipe.
+       - Enable ls aliases.
+       - Set options in ll alias to -alF.
+       - Define an alert alias.
+       - Enabled colored grep aliases.
+     - etc.bash.bashrc:
+       - Add sudo hint.
+Author: Matthias Klose <doko@ubuntu.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- bash-4.3.orig/builtins/cd.def
++++ bash-4.3/builtins/cd.def
+@@ -37,7 +37,6 @@ $PRODUCES cd.c
+ #include <fcntl.h>
+ 
+ #include <stdio.h>
+-#include <unistd.h>
+ 
+ #include "../bashansi.h"
+ #include "../bashintl.h"
+@@ -181,7 +180,7 @@ resetpwd (caller)
+      char *caller;
+ {
+   char *tdir;
+-
++      
+   FREE (the_current_working_directory);
+   the_current_working_directory = (char *)NULL;
+   tdir = get_working_directory (caller);
+@@ -225,7 +224,7 @@ cdxattr (dir, ndirp)
+ 
+   if (xattrfd >= 0)
+     close (xattrfd);
+-  xattrfd = fd;
++  xattrfd = fd;  
+ 
+   return r;
+ #else
+@@ -347,7 +346,6 @@ cd_builtin (list)
+     }
+   else if (absolute_pathname (list->word->word))
+     dirname = list->word->word;
+-
+   else if (privileged_mode == 0 && (cdpath = get_string_value ("CDPATH")))
+     {
+       dirname = list->word->word;
+@@ -359,7 +357,6 @@ cd_builtin (list)
+ 	  /* OPT is 1 if the path element is non-empty */
+ 	  opt = path[0] != '\0';
+ 	  temp = sh_makepath (path, dirname, MP_DOTILDE);
+-
+ 	  free (path);
+ 
+ 	  if (change_to_directory (temp, no_symlinks, xattrflag))
+@@ -399,48 +396,44 @@ cd_builtin (list)
+ #endif
+     }
+   else
+-//    printf("goto else\n");
+     dirname = list->word->word;
+ 
+   /* When we get here, DIRNAME is the directory to change to.  If we
+      chdir successfully, just return. */
+   if (change_to_directory (dirname, no_symlinks, xattrflag))
+     {
+-//      printf ("dirname: %s\n", dirname);
+       if (lflag & LCD_PRINTPATH)
+-	    printf ("%s\n", dirname);
++	printf ("%s\n", dirname);
+       return (bindpwd (no_symlinks));
+     }
+ 
+   /* If the user requests it, then perhaps this is the name of
+      a shell variable, whose value contains the directory to
+      change to. */
+-//  printf("goto LCD_DOVARS\n");
+   if (lflag & LCD_DOVARS)
+     {
+       temp = get_string_value (dirname);
+       if (temp && change_to_directory (temp, no_symlinks, xattrflag))
+-      {
+-         printf ("%s\n", temp);
+-         return (bindpwd (no_symlinks));
+-	  }
++	{
++	  printf ("%s\n", temp);
++	  return (bindpwd (no_symlinks));
++	}
+     }
+ 
+   /* If the user requests it, try to find a directory name similar in
+      spelling to the one requested, in case the user made a simple
+      typo.  This is similar to the UNIX 8th and 9th Edition shells. */
+-//  printf("goto LCD_DOSPEL\n");
+   if (lflag & LCD_DOSPELL)
+     {
+       temp = dirspell (dirname);
+       if (temp && change_to_directory (temp, no_symlinks, xattrflag))
+-      {
+-	    printf ("%s\n", temp);
+-	    free (temp);
+-	    return (bindpwd (no_symlinks));
+-      }
++	{
++	  printf ("%s\n", temp);
++	  free (temp);
++	  return (bindpwd (no_symlinks));
++	}
+       else
+-	   FREE (temp);
++	FREE (temp);
+     }
+ 
+   builtin_error ("%s: %s", dirname, strerror (errno));
+@@ -539,7 +532,6 @@ change_to_directory (newdir, nolinks, xa
+      char *newdir;
+      int nolinks, xattr;
+ {
+-//  printf("This change_to_directory Func");
+   char *t, *tdir, *ndir;
+   int err, canon_failed, r, ndlen, dlen;
+ 
+@@ -574,7 +566,6 @@ change_to_directory (newdir, nolinks, xa
+       canon_failed = 1;
+     }
+ 
+-
+   /* In POSIX mode, if we're resolving symlinks logically and sh_canonpath
+      returns NULL (because it checks the path, it will return NULL if the
+      resolved path doesn't exist), fail immediately. */
+@@ -616,42 +607,25 @@ change_to_directory (newdir, nolinks, xa
+ 	resetxattr ();
+     }
+ 
+-  char *bashdir, *bashdirc=(char *)malloc(512), *buffer[512];
+-  bashdir = "/.bashdirc";
+-
+-  getcwd(buffer, sizeof(buffer));
+-  bashdirc = strcat(buffer,bashdir);
+-//  printf("bashdirc:%s\n",bashdirc);
+-
+   /* If the chdir succeeds, update the_current_working_directory. */
+   if (r == 0)
+     {
+       /* If canonicalization failed, but the chdir succeeded, reset the
+ 	 shell's idea of the_current_working_directory. */
+       if (canon_failed)
+-	  {
+-	    t = resetpwd ("cd");
+-	    if (t == 0)
+-	      set_working_directory (tdir);
+-	    else
+-	      free (t);
+-	  }
+-      else
+-      {
++	{
++	  t = resetpwd ("cd");
++	  if (t == 0)
+ 	    set_working_directory (tdir);
+-      }
+-
+-//     printf("aces:%d\n",access(bashdirc, F_OK));
+-     if (access(bashdirc, F_OK) !=-1)
+-     {
+-//        printf("OK!\n");
+-        maybe_execute_file (bashdirc, 1);
+-     }
++	  else
++	    free (t);
++	}
++      else
++	set_working_directory (tdir);
+ 
+-     free (tdir);
+-     return (1);
++      free (tdir);
++      return (1);
+     }
+-////////////////////////////////////////////////////////////////////////
+ 
+   /* We failed to change to the appropriate directory name.  If we tried
+      what the user passed (nolinks != 0), punt now. */
+@@ -670,10 +644,7 @@ change_to_directory (newdir, nolinks, xa
+     {
+       t = resetpwd ("cd");
+       if (t == 0)
+-      {
+-        set_working_directory (tdir);
+-        printf("tdir:%s\n",tdir);
+-      }
++	set_working_directory (tdir);
+       else
+ 	free (t);
+ 
+@@ -685,8 +656,6 @@ change_to_directory (newdir, nolinks, xa
+       r = 0;
+     }
+ 
+-  printf("tdir:%s\n",tdir);
+   free (tdir);
+-  printf("tdir:%s\n",tdir);
+   return r;
+ }
